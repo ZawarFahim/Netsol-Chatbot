@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from fastapi.responses import HTMLResponse
 from backend.routes import router
 from backend.auth_routes import auth_router
 from backend.upload_routes import upload_router
@@ -9,28 +10,15 @@ from backend.audio import get_whisper_model, get_kokoro_engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("--- [Startup] Verifying Database Connection ---")
     try:
         client.admin.command('ping')
-        print("--- [Startup] MongoDB Atlas connection: SUCCESS ---")
-    except Exception as e:
-        print(f"--- [Startup] MongoDB Atlas connection: FAILED ({e}) ---")
-
-    print("--- [Startup] Warm loading Speech Models to Memory ---")
-    try:
         get_whisper_model()
         get_kokoro_engine()
-        print("--- [Startup] Model tracking ready for incoming requests ---")
-    except Exception as e:
-        print(f"--- [Startup] Model caching run failed: {e} ---")
+    except Exception:
+        pass
     yield
-    print("--- [Shutdown] Cleaning pipeline context resources ---")
 
-app = FastAPI(
-    title="AI Voice Assistant API",
-    description="Backend API for the RAG Chatbot with Voice capabilities.",
-    lifespan=lifespan
-)
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,28 +32,18 @@ app.include_router(router)
 app.include_router(auth_router)
 app.include_router(upload_router)
 
-from fastapi.responses import HTMLResponse
-
 @app.get("/app", response_class=HTMLResponse)
 def serve_app():
-    with open("index.html", "r") as f:
-        return f.read()
+    with open("index.html", "r") as f: return f.read()
 
 @app.get("/loginpage.html", response_class=HTMLResponse)
 def serve_login():
-    with open("loginpage.html", "r") as f:
-        return f.read()
+    with open("loginpage.html", "r") as f: return f.read()
 
 @app.get("/")
 def home():
     try:
         client.admin.command('ping')
-        db_status = "Connected"
+        return {"status": "online", "database": "Connected"}
     except Exception:
-        db_status = "Disconnected"
-        
-    return {
-        "status": "online",
-        "database": db_status,
-        "message": "Voice AI Assistant API is running."
-    }
+        return {"status": "online", "database": "Disconnected"}

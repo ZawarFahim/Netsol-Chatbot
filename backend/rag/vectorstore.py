@@ -7,11 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-FAQ_COLLECTION_NAME = "faq_vectors"
-VECTOR_INDEX_NAME = "vector_index"
-
-def get_embeddings() -> OpenAIEmbeddings:
-    """Initialize OpenRouter embeddings client."""
+def get_embeddings():
     return OpenAIEmbeddings(
         model="openai/text-embedding-3-small",
         openai_api_key=os.getenv("OPENROUTER_API_KEY"),
@@ -20,116 +16,46 @@ def get_embeddings() -> OpenAIEmbeddings:
     )
 
 def get_collection():
-    """Get the MongoDB collection object for vectors."""
-    mongo_uri = os.getenv("MONGO_URI")
-    db_name = os.getenv("DB_NAME")
-    if not mongo_uri or not db_name:
-        raise ValueError("MONGO_URI and DB_NAME environment variables must be set.")
-    client = MongoClient(mongo_uri)
-    db = client[db_name]
-    return db[FAQ_COLLECTION_NAME]
+    return MongoClient(os.getenv("MONGO_URI"))[os.getenv("DB_NAME")]["faq_vectors"]
 
-def save_vectorstore(chunks, clear_existing: bool = False) -> None:
-    """Generate embeddings and save chunks to MongoDB."""
+def save_vectorstore(chunks, clear_existing: bool = False):
     if not chunks:
-        print("No chunks provided to save.")
         return
-
-    print("Connecting to MongoDB Atlas...")
     collection = get_collection()
-
-    print("Generating embeddings...")
-    embeddings_client = get_embeddings()
-
-    texts = [chunk.page_content for chunk in chunks]
-    metadata_list = [chunk.metadata for chunk in chunks]
-
-    embeddings = embeddings_client.embed_documents(texts)
-    
-    documents = []
-    for text, meta, emb in zip(texts, metadata_list, embeddings):
-        documents.append({
-            "text": text,
-            "embedding": emb,
-            "metadata": meta
-        })
-
     if clear_existing:
-        print("Clearing existing vector database collection...")
         collection.delete_many({})
-    else:
-        print("Appending to existing vector database collection...")
-    
-    print(f"Inserting {len(documents)} document embeddings into MongoDB...")
-    collection.insert_many(documents)
-    print("Vector database successfully written to MongoDB Atlas.")
+        
+    texts = [c.page_content for c in chunks]
+    embeddings = get_embeddings().embed_documents(texts)
+    collection.insert_many([
+        {"text": t, "embedding": e, "metadata": c.metadata} 
+        for t, e, c in zip(texts, embeddings, chunks)
+    ])
 
-def cosine_similarity(v1, v2) -> float:
-    """Calculate the cosine similarity between two vectors."""
-    v1_arr = np.array(v1)
-    v2_arr = np.array(v2)
-    dot_product = np.dot(v1_arr, v2_arr)
-    norm_v1 = np.linalg.norm(v1_arr)
-    norm_v2 = np.linalg.norm(v2_arr)
-    if norm_v1 == 0.0 or norm_v2 == 0.0:
-        return 0.0
-    return float(dot_product / (norm_v1 * norm_v2))
-
-def similarity_search(query: str, limit: int = 3) -> list[Document]:
-    """Search for similar documents in MongoDB using Atlas Vector Search with a manual similarity fallback."""
+def similarity_search(query: str, limit: int = 3):
     collection = get_collection()
-    embeddings_client = get_embeddings()
+    query_vector = get_embeddings().embed_query(query)
 
-    query_vector = embeddings_client.embed_query(query)
-
-    pipeline = [
-        {
+    try:
+        results = list(collection.aggregate([{
             "$vectorSearch": {
-                "index": VECTOR_INDEX_NAME,
+                "index": "vector_index",
                 "path": "embedding",
                 "queryVector": query_vector,
                 "numCandidates": 100,
                 "limit": limit
             }
-        }
-    ]
-    
-    try:
-        results = list(collection.aggregate(pipeline))
+        }]))
         if results:
-            print("Atlas Vector Search index search succeeded.")
-            docs = []
-            for doc in results:
-                docs.append(Document(
-                    page_content=doc.get("text", ""),
-                    metadata=doc.get("metadata", {})
-                ))
-            return docs
-    except Exception as e:
-        print(f"Atlas Vector Search failed or index '{VECTOR_INDEX_NAME}' is not yet created. Error: {e}")
-        print("Falling back to local cosine similarity calculation in Python...")
-
-    all_docs = list(collection.find({}, {"text": 1, "embedding": 1, "metadata": 1}))
-    if not all_docs:
-        print("No documents found in the vector database collection.")
-        return []
+            return [Document(page_content=d.get("text", ""), metadata=d.get("metadata", {})) for d in results]
+    except Exception:
+        pass
 
     scored_docs = []
-    for doc in all_docs:
+    for doc in collection.find({}, {"text": 1, "embedding": 1, "metadata": 1}):
         emb = doc.get("embedding")
         if emb and len(emb) == len(query_vector):
-            score = cosine_similarity(query_vector, emb)
+            score = float(np.dot(query_vector, emb) / (np.linalg.norm(query_vector) * np.linalg.norm(emb)))
             scored_docs.append((score, doc))
 
-    scored_docs.sort(key=lambda x: x[0], reverse=True)
-
-    top_results = scored_docs[:limit]
-    
-    docs = []
-    for score, doc in top_results:
-        docs.append(Document(
-            page_content=doc.get("text", ""),
-            metadata=doc.get("metadata", {})
-        ))
-        
-    return docs
+    return [Document(page_content=d.get("text", ""), metadata=d.get("metadata", {})) for _, d in sorted(scored_docs, key=lambda x: x[0], reverse=True)[:limit]]

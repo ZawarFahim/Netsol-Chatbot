@@ -6,7 +6,6 @@ from pymongo import MongoClient
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME", "voice_rag_ai")
 
 if not MONGO_URI:
     raise ValueError("MONGO_URI missing")
@@ -20,16 +19,6 @@ client = MongoClient(
     retryWrites=True,
 )
 
-db = client[DB_NAME]
-
+db = client[os.getenv("DB_NAME", "voice_rag_ai")]
 chat_collection = db["chats"]
-memory_collection = db["memory"]
-users_collection = db["users"]          # stores registered user accounts
-
-
-def database_status():
-    try:
-        client.admin.command("ping")
-        return True, "Connected"
-    except Exception as e:
-        return False, str(e)
+users_collection = db["users"]

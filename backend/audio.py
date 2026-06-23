@@ -16,19 +16,15 @@ whisper_model = None
 def get_whisper_model():
     global whisper_model
     if whisper_model is None:
-        print("--- Initializing Whisper Local Model (tiny) ---")
         whisper_model = whisper.load_model("tiny")
-        print("--- Whisper engine running successfully ---")
     return whisper_model
 
 def get_kokoro_engine():
     global kokoro_engine
     if kokoro_engine is None:
         if not ONNX_PATH.exists() or not VOICES_PATH.exists():
-            raise FileNotFoundError("Missing Kokoro ONNX model components. Please execute download_models.py first.")
-        print("--- Initializing Kokoro ONNX Engine ---")
+            raise FileNotFoundError("Missing Kokoro models")
         kokoro_engine = Kokoro(str(ONNX_PATH), str(VOICES_PATH))
-        print("--- Kokoro TTS engine running successfully ---")
     return kokoro_engine
 
 def transcribe_audio_local(audio_bytes: bytes, filename: str) -> str:
@@ -38,25 +34,14 @@ def transcribe_audio_local(audio_bytes: bytes, filename: str) -> str:
         tmp_path = tmp.name
 
     try:
-        model = get_whisper_model()
-        result = model.transcribe(tmp_path)
-        return result.get("text", "").strip()
-    except Exception as e:
-        print(f"Audio transcription error: {e}")
-        return ""
+        return get_whisper_model().transcribe(tmp_path).get("text", "").strip()
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
 def text_to_speech_kokoro(text: str) -> bytes:
     try:
-        engine = get_kokoro_engine()
-        samples, sample_rate = engine.create(
-            text,
-            voice="af_sarah",
-            speed=1.0,
-            lang="en-us"
-        )
+        samples, sample_rate = get_kokoro_engine().create(text, voice="af_sarah", speed=1.0, lang="en-us")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             temp_filename = tmp.name
         
@@ -67,6 +52,5 @@ def text_to_speech_kokoro(text: str) -> bytes:
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
         return audio_bytes
-    except Exception as e:
-        print(f"TTS synthesis error: {e}")
+    except Exception:
         return b""
