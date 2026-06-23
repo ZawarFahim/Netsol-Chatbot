@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IZS AI Assistant</title>
+<style>
+  :root {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-sidebar: #171717;
+    --bg-input: #2f2f2f;
+    --bg-hover: #3a3a3a;
+    --bg-user-bubble: #2f2f2f;
+    --text-primary: #ececec;
+    --text-secondary: #9b9b9b;
+    --text-muted: #6b6b6b;
+    --border: #3f3f3f;
+    --accent: #10a37f;
+    --accent-hover: #0d8c6d;
+    --accent-glow: rgba(16,163,127,0.15);
+    --shadow: rgba(0,0,0,0.4);
+    --scrollbar: #3f3f3f;
+    --icon-btn: #9b9b9b;
+    --icon-btn-hover: #ececec;
+    --danger: #ef4444;
+    --recording: #ef4444;
+  }
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f4f4f4;
+    --bg-sidebar: #f9f9f9;
+    --bg-input: #f4f4f4;
+    --bg-hover: #ebebeb;
+    --bg-user-bubble: #f4f4f4;
+    --text-primary: #0d0d0d;
+    --text-secondary: #5c5c5c;
+    --text-muted: #ababab;
+    --border: #e5e5e5;
+    --accent: #10a37f;
+    --accent-hover: #0d8c6d;
+    --accent-glow: rgba(16,163,127,0.1);
+    --shadow: rgba(0,0,0,0.1);
+    --scrollbar: #d0d0d0;
+    --icon-btn: #5c5c5c;
+    --icon-btn-hover: #0d0d0d;
+    --danger: #dc2626;
+    --recording: #dc2626;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow: hidden; }
+
+  .app { display: flex; height: 100vh; position: relative; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px; min-width: 260px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: absolute; left: 0; top: 0; height: 100%;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200;
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .sidebar-overlay.show { display: block; opacity: 1; }
+
+  .sidebar-header {
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-text {
+    font-family: 'Helvetica Neue', 'Inter', -apple-system, sans-serif;
+    font-size: 22px; font-weight: 700; letter-spacing: 6px;
+    color: #ffffff; user-select: none;
+    text-shadow:
+      0 0 4px rgba(16,163,127,0.9),
+      0 0 10px rgba(16,163,127,0.7),
+      0 0 22px rgba(16,163,127,0.45),
+      0 0 40px rgba(16,163,127,0.25);
+    animation: glow-pulse 3.5s ease-in-out infinite;
+  }
+  [data-theme="light"] .logo-text {
+    color: #0d8c6d;
+    text-shadow:
+      0 0 6px rgba(16,163,127,0.4),
+      0 0 14px rgba(16,163,127,0.3),
+      0 0 28px rgba(16,163,127,0.2);
+  }
+  @keyframes glow-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.18); }
+  }
+
+  .close-sidebar-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--icon-btn); padding: 6px; border-radius: 8px;
+    display: flex; align-items: center; transition: all 0.15s;
+  }
+  .close-sidebar-btn:hover { background: var(--bg-hover); color: var(--icon-btn-hover); }
+  .close-sidebar-btn svg { width: 18px; height: 18px; }
+
+  .new-chat-btn {
+    width: calc(100% - 28px); margin: 12px 14px 4px;
+    background: none; border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text-secondary); cursor: pointer; padding: 9px 12px;
+    font-size: 13px; display: flex; align-items: center; gap: 8px;
+    transition: all 0.15s; text-align: left;
+  }
+  .new-chat-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-muted); }
+  .new-chat-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  .sidebar-section-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    letter-spacing: 0.6px; text-transform: uppercase;
+    padding: 14px 14px 6px;
+  }
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+  .chat-item {
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background 0.12s; margin-bottom: 2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .chat-item.active { background: var(--bg-hover); color: var(--text-primary); }
+  .chat-item svg { flex-shrink: 0; width: 14px; height: 14px; opacity: 0.5; }
+
+  .sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .profile-wrap { position: relative; }
+  .profile-btn {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 10px; border: 1px solid transparent;
+    background: none; cursor: pointer; transition: all 0.15s; text-align: left;
+  }
+  .profile-btn:hover { background: var(--bg-hover); }
+  .profile-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile-email { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile-chevron { color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+  .profile-chevron svg { width: 14px; height: 14px; display: block; }
+  .profile-wrap.open .profile-chevron { transform: rotate(180deg); }
+  .profile-menu {
+    position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; box-shadow: 0 4px 16px var(--shadow);
+    opacity: 0; transform: translateY(4px); pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s; z-index: 50;
+  }
+  .profile-wrap.open .profile-menu { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .profile-menu-item {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px; border: none; background: none;
+    color: var(--text-primary); font-size: 13px; cursor: pointer; text-align: left;
+    transition: background 0.12s;
+  }
+  .profile-menu-item:hover { background: var(--bg-hover); }
+  .profile-menu-item.danger { color: var(--danger); }
+  .profile-menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+  .profile-menu-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .theme-toggle {
+    display: flex; align-items: center; background: var(--bg-input);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 3px; gap: 2px; cursor: pointer; width: 100%;
+  }
+  .theme-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 5px 10px; border-radius: 16px; border: none; background: none;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+  }
+  .theme-btn.active { background: var(--bg-primary); color: var(--text-primary); box-shadow: 0 1px 3px var(--shadow); }
+  .theme-btn svg { width: 13px; height: 13px; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+
+  .topbar {
+    height: 52px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; position: relative; z-index: 10;
+  }
+  .menu-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--icon-btn); padding: 8px; border-radius: 8px;
+    display: flex; align-items: center; transition: all 0.15s;
+  }
+  .menu-btn:hover { background: var(--bg-hover); color: var(--icon-btn-hover); }
+  .menu-btn svg { width: 20px; height: 20px; }
+
+  .topbar-logo { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+
+  .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+
+  /* Messages */
+  .messages-container { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; }
+  .messages-content { max-width: 720px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; flex: 1; }
+
+  .welcome {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; margin: auto; padding: 20px; max-width: 480px;
+  }
+  .welcome-logo {
+    width: 60px; height: 60px; border-radius: 20px;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; letter-spacing: 2px;
+    margin-bottom: 24px; box-shadow: 0 8px 24px var(--accent-glow);
+  }
+  .welcome h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .welcome p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+  .msg-row { display: flex; gap: 16px; max-width: 100%; }
+  .msg-row.user-bubble { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px; font-weight: 600;
+  }
+  .avatar.bot { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(16,163,127,0.25); }
+  .avatar.bot svg { width: 16px; height: 16px; }
+  .avatar.user { background: var(--border); color: var(--text-secondary); }
+  .avatar.user svg { width: 16px; height: 16px; }
+
+  .bubble { display: flex; flex-direction: column; max-width: calc(100% - 48px); }
+  .bubble-name { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .msg-row.user-bubble .bubble { align-items: flex-end; }
+
+  .bubble-text {
+    font-size: 14px; line-height: 1.6; word-break: break-word;
+    color: var(--text-primary);
+  }
+  .msg-row.user-bubble .bubble-text {
+    background: var(--bg-user-bubble); padding: 10px 16px; border-radius: 18px;
+    border: 1px solid var(--border);
+  }
+
+  /* Audio player within bubble */
+  .audio-player {
+    display: flex; align-items: center; gap: 12px; margin-top: 10px;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 12px; width: fit-content;
+  }
+  .play-btn {
+    background: var(--accent); border: none; width: 28px; height: 28px;
+    border-radius: 50%; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .play-btn:hover { background: var(--accent-hover); }
+  .play-btn svg { width: 12px; height: 12px; }
+  .audio-waveform { display: flex; align-items: center; gap: 2px; }
+  .wave-bar { width: 2px; background: var(--accent); opacity: 0.35; border-radius: 1px; }
+  .audio-player.playing .wave-bar { animation: wave-jump 1s ease-in-out infinite alternate; }
+  @keyframes wave-jump { from { transform: scaleY(1); } to { transform: scaleY(2.2); } }
+  .audio-dur { font-size: 11px; color: var(--text-muted); }
+
+  /* Input area */
+  .input-panel { padding: 0 16px 24px; }
+  .input-content { max-width: 720px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+
+  .file-preview-row { display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .file-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    padding: 6px 10px; border-radius: 16px; font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .file-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .file-chip-remove {
+    background: none; border: none; cursor: pointer; color: var(--text-muted);
+    display: flex; align-items: center; transition: color 0.12s;
+  }
+  .file-chip-remove:hover { color: var(--danger); }
+  .file-chip-remove svg { width: 12px; height: 12px; }
+
+  .input-box {
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 20px; display: flex; align-items: flex-end;
+    padding: 8px 12px; transition: border-color 0.15s;
+  }
+  .input-box:focus-within { border-color: var(--text-muted); }
+
+  .action-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--icon-btn); padding: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .action-btn:hover { background: var(--bg-hover); color: var(--icon-btn-hover); }
+  .action-btn.recording { color: var(--recording); animation: mic-pulse 1.2s infinite; }
+  @keyframes mic-pulse { 0%, 100% { opacity:1 } 50% { opacity:0.5 } }
+  .action-btn svg { width: 18px; height: 18px; }
+
+  .input-box textarea {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text-primary); font-size: 14px; font-family: inherit;
+    resize: none; max-height: 200px; height: 24px; padding: 2px 8px;
+    line-height: 1.5;
+  }
+  .input-box textarea::placeholder { color: var(--text-muted); }
+
+  .send-btn {
+    background: var(--text-primary); color: var(--bg-primary); border: none;
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .send-btn:hover:not(:disabled) { transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.15; cursor: not-allowed; }
+  .send-btn svg { width: 16px; height: 16px; }
+
+  .input-disclaimer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 18px; font-size: 13px;
+    box-shadow: 0 4px 20px var(--shadow);
+    opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Typing indicator */
+  .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: var(--bg-secondary); border-radius: 18px; border: 1px solid var(--border); width: fit-content; margin-top: 4px; }
+  .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-secondary); opacity: 0.4; animation: typing 1.4s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); opacity: 0.8; } }
+
+  /* Responsive */
+  @media(min-width: 768px) {
+    .sidebar { position: relative; transform: translateX(0); }
+    .sidebar-overlay { display: none !important; }
+    .menu-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-text">IZS</div>
+      </div>
+      <button class="close-sidebar-btn" onclick="closeSidebar()" title="Close sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New chat
+    </button>
+
+    <div class="sidebar-section-label">Chat History</div>
+    <div class="sidebar-list" id="sidebarList"></div>
+
+    <div class="sidebar-footer">
+      <div class="profile-wrap" id="profileWrap">
+        <button class="profile-btn" onclick="toggleProfileMenu()">
+          <div class="profile-avatar" id="avatarLetter">U</div>
+          <div class="profile-info">
+            <div class="profile-name" id="profileName">User Account</div>
+            <div class="profile-email" id="profileEmail">Active Session</div>
+          </div>
+          <div class="profile-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="profile-menu">
+          <button class="profile-menu-item" onclick="toggleTheme()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+            Toggle Theme
+          </button>
+          <button class="profile-menu-item" onclick="clearChat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear Conversation
+          </button>
+          <button class="profile-menu-item danger" onclick="handleLogout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log out
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" onclick="openSidebar()" title="Open sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topbar-logo">IZS AI</div>
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="messages-container" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-logo">IZS</div>
+        <h1>How can I help you today?</h1>
+        <p>Ask me anything. I can answer questions, summarize information, help you think through problems, and more.</p>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-panel">
+      <div class="input-content">
+        <div class="file-preview-row" id="filePreviewRow"></div>
+        <div class="input-box">
+          <button class="action-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)" multiple />
+          
+          <textarea id="msgInput" placeholder="Message IZS..." oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+          
+          <button class="action-btn" id="micBtn" onclick="toggleVoice()" title="Voice search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-disclaimer">IZS AI can make mistakes. Verify important info.</div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<canvas id="captureCanvas" style="display:none"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+// Authentication check on load
+const token = localStorage.getItem('izs_token');
+if (!token) {
+  window.location.href = 'loginpage.html';
+}
+
+const API = 'http://localhost:8000';
+let messages = [];
+let sessions = JSON.parse(localStorage.getItem('izs_sessions') || '[]');
+let currentSessionId = null;
+let isLoading = false;
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let attachedFiles = [];
+
+// Show current username in profile
+const activeUsername = localStorage.getItem('izs_username') || 'User Account';
+document.getElementById('profileName').textContent = activeUsername;
+document.getElementById('avatarLetter').textContent = activeUsername.charAt(0).toUpperCase();
+
+// Helper for auth headers
+function authHeaders() {
+  const t = localStorage.getItem('izs_token');
+  return t ? { 'Authorization': 'Bearer ' + t } : {};
+}
+
+function handleLogout() {
+  localStorage.removeItem('izs_token');
+  localStorage.removeItem('izs_username');
+  window.location.href = 'loginpage.html';
+}
+
+function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+
+function toggleProfileMenu() { document.getElementById('profileWrap').classList.toggle('open'); }
+document.addEventListener('click', e => { if (!document.getElementById('profileWrap').contains(e.target)) document.getElementById('profileWrap').classList.remove('open'); });
+
+// Theme
+function initTheme() {
+  const saved = localStorage.getItem('izs_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('izs_theme', next);
+  showToast('Theme updated');
+}
+initTheme();
+
+// Status check
+async function checkStatus() {
+  try {
+    const r = await fetch(API + '/');
+    const d = await r.json();
+    const ok = d.database === 'Connected';
+    document.getElementById('statusDot').style.background = ok ? 'var(--accent)' : 'var(--danger)';
+    document.getElementById('statusText').textContent = ok ? 'Connected' : 'DB offline';
+  } catch {
+    document.getElementById('statusDot').style.background = 'var(--danger)';
+    document.getElementById('statusText').textContent = 'Offline';
+  }
+}
+checkStatus();
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  document.getElementById('sendBtn').disabled = !el.value.trim() && attachedFiles.length === 0;
+}
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function showToast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function scrollBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+function hideWelcome() { const w = document.getElementById('welcome'); if (w) w.remove(); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatText(t) { return escHtml(t).replace(/\n/g,'<br>'); }
+
+function newChat() {
+  messages = []; currentSessionId = null; attachedFiles = [];
+  document.getElementById('filePreviewRow').style.display = 'none';
+  document.getElementById('filePreviewRow').innerHTML = '';
+  const m = document.getElementById('messages');
+  m.innerHTML = '<div class="welcome" id="welcome"><div class="welcome-logo">IZS</div><h1>How can I help you today?</h1><p>Ask me anything. I can answer questions, summarize information, help you think through problems, and more.</p></div>';
+  document.getElementById('msgInput').value = '';
+  autoResize(document.getElementById('msgInput'));
+  document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+  closeSidebar();
+}
+
+function saveSession(firstMsg) {
+  if (!currentSessionId) {
+    currentSessionId = Date.now().toString();
+    const session = { id: currentSessionId, title: firstMsg.slice(0, 40), ts: Date.now() };
+    sessions.unshift(session);
+    localStorage.setItem('izs_sessions', JSON.stringify(sessions));
+    renderSidebar();
+  }
+}
+
+function renderSidebar() {
+  const list = document.getElementById('sidebarList');
+  if (!sessions.length) { list.innerHTML = '<div style="padding:20px 10px;text-align:center;font-size:13px;color:var(--text-muted)">No chats yet</div>'; return; }
+  list.innerHTML = sessions.map(s => '<div class="chat-item ' + (s.id === currentSessionId ? 'active' : '') + '" onclick="selectSession(\'' + s.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' + escHtml(s.title) + '</div>').join('');
+}
+renderSidebar();
+
+function selectSession(id) { currentSessionId = id; renderSidebar(); showToast('Session loaded'); closeSidebar(); }
+
+function appendUserMsg(text, fileName) {
+  hideWelcome();
+  const m = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user-bubble';
+  let content = text ? '<div class="bubble-text">' + escHtml(text) + '</div>' : '';
+  if (fileName) content += '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>' + escHtml(fileName) + '</div>';
+  row.innerHTML = '<div class="avatar user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="bubble"><div class="bubble-name">You</div>' + content + '</div>';
+  m.appendChild(row); scrollBottom();
+}
+
+function appendBotMsg(text, audioB64) {
+  const m = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  let audioHtml = '';
+  if (audioB64) {
+    const bars = Array.from({length:24},(_,i) => '<div class="wave-bar" style="height:' + (8 + Math.sin(i*0.7)*8) + 'px"></div>').join('');
+    audioHtml = '<div class="audio-player"><button class="play-btn" onclick="playAudio(this,\'' + audioB64 + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><div class="audio-waveform">' + bars + '</div><span class="audio-dur">AI voice</span></div>';
+  }
+  row.innerHTML = '<div class="avatar bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="bubble"><div class="bubble-name">IZS AI</div><div class="bubble-text">' + formatText(text) + '</div>' + audioHtml + '</div>';
+  m.appendChild(row); scrollBottom();
+}
+
+function playAudio(btn, b64) {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  audio.play();
+  audio.onended = () => { URL.revokeObjectURL(url); btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; };
+}
+
+function addTyping() {
+  const m = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'typingRow';
+  row.innerHTML = '<div class="avatar bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="bubble"><div class="bubble-name">IZS AI</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  m.appendChild(row); scrollBottom();
+}
+function removeTyping() { const r = document.getElementById('typingRow'); if (r) r.remove(); }
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if ((!text && attachedFiles.length === 0) || isLoading) return;
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  input.value = ''; autoResize(input);
+  
+  const audioFile = attachedFiles.find(f => f.type.startsWith('audio/'));
+  const docFile = attachedFiles.find(f => !f.type.startsWith('audio/'));
+  const fileName = attachedFiles.length ? attachedFiles.map(f=>f.name).join(', ') : null;
+  clearFilePreview();
+  
+  if (!messages.length) saveSession(text || 'Voice query');
+  appendUserMsg(text, fileName);
+  addTyping();
+  
+  try {
+    const headers = authHeaders();
+
+    // 1. If user attached a document (PDF, TXT, DOCX), index it first
+    if (docFile) {
+      showToast('Indexing file contents...');
+      const uploadFd = new FormData();
+      uploadFd.append('file', docFile);
+      const uploadRes = await fetch(API + '/upload', {
+        method: 'POST',
+        headers: headers,
+        body: uploadFd
+      });
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json();
+        throw new Error(err.detail || 'Could not index file.');
+      }
+      showToast('File indexed successfully!');
+    }
+
+    // 2. Process query
+    if (audioFile) {
+      const fd = new FormData();
+      fd.append('file', audioFile);
+      const r = await fetch(API + '/chat-audio', {
+        method: 'POST',
+        headers: headers,
+        body: fd
+      });
+      if (!r.ok) throw new Error('Voice message processing failed');
+      const d = await r.json();
+      removeTyping();
+      if (d.error) showToast('Error: ' + d.error, 3500);
+      else {
+        if (d.user_text && !text) appendUserMsg('🎤 ' + d.user_text);
+        appendBotMsg(d.bot_text, d.bot_audio);
+      }
+    } else {
+      const r = await fetch(API + '/chat', {
+        method: 'POST',
+        headers: Object.assign({'Content-Type':'application/json'}, headers),
+        body: JSON.stringify({ message: text, generate_audio: true })
+      });
+      if (!r.ok) throw new Error('Failed to fetch chatbot response.');
+      const d = await r.json();
+      removeTyping();
+      appendBotMsg(d.response, d.bot_audio || null);
+    }
+  } catch (err) {
+    removeTyping();
+    appendBotMsg(err.message || 'Error occurred while communicating with backend.');
+  }
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = !document.getElementById('msgInput').value.trim();
+}
+
+async function toggleVoice() {
+  if (isRecording) { mediaRecorder.stop(); isRecording = false; document.getElementById('micBtn').classList.remove('recording'); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
+      attachedFiles = [file]; addFileChip(file.name, 'audio');
+      stream.getTracks().forEach(t => t.stop());
+      showToast('Recording captured — click send');
+      document.getElementById('sendBtn').disabled = false;
+    };
+    mediaRecorder.start(); isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    showToast('Recording… tap mic again to stop');
+  } catch { showToast('Microphone access denied'); }
+}
+
+function handleFileSelect(e) {
+  Array.from(e.target.files).forEach(f => { attachedFiles.push(f); addFileChip(f.name, f.type.startsWith('audio/') ? 'audio' : 'file'); });
+  e.target.value = ''; document.getElementById('sendBtn').disabled = false;
+}
+
+function addFileChip(name, type) {
+  const row = document.getElementById('filePreviewRow'); row.style.display = 'flex';
+  const chip = document.createElement('div'); chip.className = 'file-chip';
+  const icon = type === 'audio' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+  const safeName = escHtml(name.length > 20 ? name.slice(0,18)+'…' : name);
+  chip.innerHTML = icon + '<span>' + safeName + '</span><button class="file-chip-remove" onclick="removeChip(this,\'' + escHtml(name) + '\')" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+  row.appendChild(chip);
+}
+
+function removeChip(btn, name) {
+  attachedFiles = attachedFiles.filter(f => f.name !== name); btn.parentElement.remove();
+  if (!attachedFiles.length) { document.getElementById('filePreviewRow').style.display = 'none'; if (!document.getElementById('msgInput').value.trim()) document.getElementById('sendBtn').disabled = true; }
+}
+function clearFilePreview() { attachedFiles = []; document.getElementById('filePreviewRow').style.display = 'none'; document.getElementById('filePreviewRow').innerHTML = ''; }
+
+async function clearChat() {
+  if (!confirm('Clear all chat history? This cannot be undone.')) return;
+  try {
+    await fetch(API + '/clear', { method: 'DELETE', headers: authHeaders() });
+    sessions = []; localStorage.removeItem('izs_sessions'); newChat();
+    showToast('Chat history cleared');
+  } catch { showToast('Failed to clear — is the server running?', 3000); }
+}
+</script>
+</body>
+</html>

@@ -44,6 +44,18 @@ app.include_router(router)
 app.include_router(auth_router)
 app.include_router(upload_router)
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/app", response_class=HTMLResponse)
+def serve_app():
+    with open("index.html", "r") as f:
+        return f.read()
+
+@app.get("/loginpage.html", response_class=HTMLResponse)
+def serve_login():
+    with open("loginpage.html", "r") as f:
+        return f.read()
+
 @app.get("/")
 def home():
     try:

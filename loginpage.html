@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IZS — Sign in</title>
+<style>
+  :root {
+    --bg-primary: #0f0f0f;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #1c1c1c;
+    --bg-input: #2a2a2a;
+    --bg-input-focus: #303030;
+    --bg-hover: #2f2f2f;
+    --text-primary: #ececec;
+    --text-secondary: #9b9b9b;
+    --text-muted: #6b6b6b;
+    --border: #2f2f2f;
+    --border-focus: #4a4a4a;
+    --accent: #10a37f;
+    --accent-hover: #0d8c6d;
+    --accent-glow: rgba(16,163,127,0.25);
+    --shadow: rgba(0,0,0,0.5);
+    --danger: #ef4444;
+    --success: #10a37f;
+  }
+  [data-theme="light"] {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f4f4f4;
+    --bg-input-focus: #ebebeb;
+    --bg-hover: #ebebeb;
+    --text-primary: #0d0d0d;
+    --text-secondary: #5c5c5c;
+    --text-muted: #ababab;
+    --border: #e5e5e5;
+    --border-focus: #c5c5c5;
+    --accent: #10a37f;
+    --accent-hover: #0d8c6d;
+    --accent-glow: rgba(16,163,127,0.15);
+    --shadow: rgba(0,0,0,0.08);
+    --danger: #dc2626;
+    --success: #10a37f;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary); color: var(--text-primary);
+    overflow: hidden;
+  }
+
+  /* Ambient glow background */
+  .ambient {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(16,163,127,0.15), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(16,163,127,0.08), transparent 50%);
+  }
+
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px; overflow-y: auto;
+  }
+
+  /* Theme toggle */
+  .theme-toggle-fab {
+    position: fixed; top: 20px; right: 20px; z-index: 10;
+    background: var(--bg-card); border: 1px solid var(--border);
+    width: 38px; height: 38px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); transition: all 0.15s;
+  }
+  .theme-toggle-fab:hover { color: var(--text-primary); border-color: var(--border-focus); }
+  .theme-toggle-fab svg { width: 16px; height: 16px; }
+
+  /* Card */
+  .auth-card {
+    width: 100%; max-width: 420px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 36px 32px 28px;
+    box-shadow: 0 20px 60px var(--shadow), 0 0 0 1px var(--border);
+  }
+
+  /* Luminescent IZS logo */
+  .logo-text {
+    font-family: 'Helvetica Neue', 'Inter', -apple-system, sans-serif;
+    font-size: 38px; font-weight: 800; letter-spacing: 12px;
+    color: #ffffff; user-select: none; text-align: center;
+    margin: 0 0 6px; padding-left: 12px;
+    text-shadow:
+      0 0 6px rgba(16,163,127,0.9),
+      0 0 16px rgba(16,163,127,0.65),
+      0 0 36px rgba(16,163,127,0.4),
+      0 0 60px rgba(16,163,127,0.2);
+    animation: glow-pulse 3.5s ease-in-out infinite;
+  }
+  [data-theme="light"] .logo-text {
+    color: #0d8c6d;
+    text-shadow:
+      0 0 8px rgba(16,163,127,0.4),
+      0 0 18px rgba(16,163,127,0.3),
+      0 0 36px rgba(16,163,127,0.2);
+  }
+  @keyframes glow-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.18); }
+  }
+  .tagline {
+    text-align: center; font-size: 13px; color: var(--text-muted);
+    margin-bottom: 28px; letter-spacing: 0.4px;
+  }
+
+  /* Tab toggle */
+  .tab-toggle {
+    display: flex; background: var(--bg-input); border-radius: 10px;
+    padding: 4px; gap: 3px; margin-bottom: 24px;
+  }
+  .tab-btn {
+    flex: 1; padding: 8px 12px; border: none; background: none;
+    color: var(--text-secondary); font-size: 13px; font-weight: 500;
+    border-radius: 7px; cursor: pointer; transition: all 0.18s;
+    font-family: inherit;
+  }
+  .tab-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px var(--shadow); }
+  .tab-btn:not(.active):hover { color: var(--text-primary); }
+
+  /* Form */
+  .form { display: none; }
+  .form.active { display: block; animation: fade-in 0.25s ease; }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .form-title {
+    font-size: 20px; font-weight: 600; margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .form-subtitle {
+    font-size: 13px; color: var(--text-secondary);
+    margin-bottom: 20px; line-height: 1.5;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field-label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); margin-bottom: 6px;
+  }
+  .input-wrap { position: relative; }
+  .input-wrap svg.input-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--text-muted); pointer-events: none;
+  }
+  .field input {
+    width: 100%; padding: 11px 14px 11px 38px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text-primary);
+    font-size: 14px; font-family: inherit; outline: none;
+    transition: all 0.15s;
+  }
+  .field input:focus {
+    background: var(--bg-input-focus); border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field input::placeholder { color: var(--text-muted); }
+
+  .password-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 6px;
+    color: var(--text-muted); display: flex; border-radius: 6px;
+    transition: color 0.15s;
+  }
+  .password-toggle:hover { color: var(--text-primary); }
+  .password-toggle svg { width: 16px; height: 16px; }
+
+  /* Face capture section */
+  .face-section {
+    margin: 16px 0;
+    padding: 14px;
+    background: var(--bg-input); border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+  .face-section.captured { border-style: solid; border-color: var(--accent); }
+  .face-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .face-label {
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .face-label svg { width: 13px; height: 13px; }
+  .face-status {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 12px;
+    background: rgba(239,68,68,0.12); color: var(--danger);
+  }
+  .face-status.ok { background: rgba(16,163,127,0.15); color: var(--accent); }
+
+  .face-preview {
+    width: 100%; aspect-ratio: 16/10;
+    background: #000; border-radius: 8px; overflow: hidden;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .face-preview video, .face-preview img { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .face-preview .placeholder {
+    color: var(--text-muted); font-size: 13px; text-align: center; padding: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .face-preview .placeholder svg { width: 28px; height: 28px; opacity: 0.5; }
+
+  .face-actions {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .face-btn {
+    flex: 1; padding: 8px 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary);
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .face-btn:hover { background: var(--bg-hover); border-color: var(--border-focus); }
+  .face-btn svg { width: 14px; height: 14px; }
+  .face-btn.primary {
+    background: var(--accent); border-color: var(--accent); color: white;
+  }
+  .face-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+  /* Main submit button */
+  .submit-btn {
+    width: 100%; padding: 12px;
+    background: var(--accent); border: none; border-radius: 10px;
+    color: white; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit;
+  }
+  .submit-btn:hover { background: var(--accent-hover); }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { background: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; transform: none; }
+  .submit-btn svg { width: 15px; height: 15px; }
+
+  .form-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; margin: -4px 0 16px;
+  }
+  .checkbox-wrap {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--text-secondary); cursor: pointer; user-select: none;
+  }
+  .checkbox-wrap input { accent-color: var(--accent); cursor: pointer; }
+  .forgot-link {
+    color: var(--text-secondary); text-decoration: none;
+    transition: color 0.15s; cursor: pointer; background: none; border: none;
+    font-size: 12px; font-family: inherit; padding: 0;
+  }
+  .forgot-link:hover { color: var(--accent); }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 0 14px; color: var(--text-muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .error-msg {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+    color: var(--danger); padding: 9px 12px; border-radius: 8px;
+    font-size: 12px; margin-bottom: 14px; display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .footer-text {
+    text-align: center; font-size: 12px; color: var(--text-muted);
+    margin-top: 16px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 18px; font-size: 13px;
+    box-shadow: 0 4px 20px var(--shadow);
+    opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Recording indicator */
+  .rec-indicator {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(0,0,0,0.6); color: white;
+    padding: 3px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .rec-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #ef4444;
+    animation: rec-blink 1s infinite;
+  }
+  @keyframes rec-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<button class="theme-toggle-fab" onclick="toggleTheme()" title="Toggle theme">
+  <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
+<div class="page">
+  <div class="auth-card">
+
+    <div class="logo-text">IZS</div>
+    <p class="tagline">AI assistant · secure access</p>
+
+    <div class="tab-toggle">
+      <button class="tab-btn active" id="loginTab" onclick="switchView('login')">Sign in</button>
+      <button class="tab-btn" id="signupTab" onclick="switchView('signup')">Create account</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- LOGIN FORM -->
+    <form class="form active" id="loginForm" onsubmit="handleLogin(event)">
+      <h2 class="form-title">Welcome back</h2>
+      <p class="form-subtitle">Sign in to continue to your IZS workspace.</p>
+
+      <div class="field">
+        <label class="field-label" for="loginEmail">Email</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="loginPassword">Password</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" title="Show/hide password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="checkbox-wrap">
+          <input type="checkbox" id="rememberMe" />
+          <span>Remember me</span>
+        </label>
+        <button type="button" class="forgot-link" onclick="showToast('Password reset coming soon')">Forgot password?</button>
+      </div>
+
+      <button type="submit" class="submit-btn">
+        <span>Sign in</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+
+      <div class="divider">or</div>
+
+      <button type="button" class="submit-btn" style="background:transparent;color:var(--text-primary);border:1px solid var(--border)" onclick="startFaceLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Sign in with Face ID</span>
+      </button>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form class="form" id="signupForm" onsubmit="handleSignup(event)">
+      <h2 class="form-title">Create your account</h2>
+      <p class="form-subtitle">Set up email login and capture your face for fast access.</p>
+
+      <div class="field">
+        <label class="field-label" for="signupName">Full name</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="signupName" placeholder="Your name" autocomplete="name" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signupEmail">Email</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="signupPassword">Password</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="signupPassword" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required />
+          <button type="button" class="password-toggle" onclick="togglePassword('signupPassword', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Face capture -->
+      <div class="face-section" id="faceSection">
+        <div class="face-header">
+          <span class="face-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Face capture (for face login)
+          </span>
+          <span class="face-status" id="faceStatus">Not captured</span>
+        </div>
+
+        <div class="face-preview" id="facePreview">
+          <div class="placeholder" id="facePlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V7a3 3 0 0 1 6 0v4"/><circle cx="12" cy="13" r="9"/><path d="M9 14a3 3 0 0 0 6 0"/></svg>
+            <span>Camera off — tap below to start</span>
+          </div>
+          <video id="faceVideo" autoplay playsinline style="display:none"></video>
+          <img id="faceImage" style="display:none" alt="Captured face" />
+          <div class="rec-indicator" id="recIndicator" style="display:none">
+            <span class="rec-dot"></span>LIVE
+          </div>
+        </div>
+
+        <div class="face-actions">
+          <button type="button" class="face-btn" id="cameraBtn" onclick="startCamera()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span id="cameraBtnLabel">Open camera</span>
+          </button>
+          <button type="button" class="face-btn primary" id="captureBtn" onclick="capturePhoto()" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.07 7.07l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.07-7.07l4.24-4.24"/></svg>
+            Capture
+          </button>
+          <button type="button" class="face-btn" id="retakeBtn" onclick="retakePhoto()" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Retake
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="signupSubmit">
+        <span>Create account</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+
+      <p class="footer-text">By creating an account, you agree to our terms and privacy policy.</p>
+    </form>
+
+  </div>
+</div>
+
+<canvas id="captureCanvas" style="display:none"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// BACKEND ENDPOINTS — your teammate will wire these up later
+// ============================================================
+const API = 'http://localhost:8000';
+const ENDPOINTS = {
+  login:        API + '/auth/login',
+  register:     API + '/auth/register',
+  registerFace: API + '/auth/register-face',
+  loginFace:    API + '/auth/login-face',
+};
+
+let stream = null;
+let capturedImage = null;
+
+// Theme
+function initTheme() {
+  const saved = localStorage.getItem('izs_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('izs_theme', next);
+  updateThemeIcon(next);
+}
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (theme === 'dark') {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  }
+}
+initTheme();
+
+// View switching
+function switchView(view) {
+  document.getElementById('loginTab').classList.toggle('active', view === 'login');
+  document.getElementById('signupTab').classList.toggle('active', view === 'signup');
+  document.getElementById('loginForm').classList.toggle('active', view === 'login');
+  document.getElementById('signupForm').classList.toggle('active', view === 'signup');
+  hideError();
+  if (view === 'login' && stream) stopCamera();
+}
+
+function togglePassword(id, btn) {
+  const inp = document.getElementById(id);
+  const isPass = inp.type === 'password';
+  inp.type = isPass ? 'text' : 'password';
+  btn.innerHTML = isPass
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+function hideError() { document.getElementById('errorMsg').classList.remove('show'); }
+function showToast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ============================================================
+// CAMERA / FACE CAPTURE
+// ============================================================
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+    const video = document.getElementById('faceVideo');
+    video.srcObject = stream;
+    video.style.display = 'block';
+    document.getElementById('facePlaceholder').style.display = 'none';
+    document.getElementById('faceImage').style.display = 'none';
+    document.getElementById('recIndicator').style.display = 'flex';
+    document.getElementById('cameraBtn').style.display = 'none';
+    document.getElementById('captureBtn').style.display = 'flex';
+    document.getElementById('retakeBtn').style.display = 'none';
+  } catch (err) {
+    showError('Camera access denied. Please allow camera permissions and try again.');
+  }
+}
+
+// Helper to convert base64 image data into a blob for FormData upload
+async function b64toBlob(b64Data) {
+  const r = await fetch(b64Data);
+  return r.blob();
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  const video = document.getElementById('faceVideo');
+  video.srcObject = null;
+  document.getElementById('recIndicator').style.display = 'none';
+}
+
+function capturePhoto() {
+  const video = document.getElementById('faceVideo');
+  const canvas = document.getElementById('captureCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0);
+  capturedImage = canvas.toDataURL('image/jpeg', 0.85);
+
+  const img = document.getElementById('faceImage');
+  img.src = capturedImage;
+  img.style.display = 'block';
+  img.style.transform = 'none';
+  video.style.display = 'none';
+
+  stopCamera();
+  document.getElementById('captureBtn').style.display = 'none';
+  document.getElementById('cameraBtn').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'flex';
+  document.getElementById('faceStatus').textContent = 'Captured';
+  document.getElementById('faceStatus').classList.add('ok');
+  document.getElementById('faceSection').classList.add('captured');
+}
+
+function retakePhoto() {
+  capturedImage = null;
+  document.getElementById('faceImage').style.display = 'none';
+  document.getElementById('faceStatus').textContent = 'Not captured';
+  document.getElementById('faceStatus').classList.remove('ok');
+  document.getElementById('faceSection').classList.remove('captured');
+  document.getElementById('retakeBtn').style.display = 'none';
+  startCamera();
+}
+
+// ============================================================
+// FACE LOGIN FLOW
+// ============================================================
+async function startFaceLogin() {
+  hideError();
+  const username = document.getElementById('loginEmail').value.trim();
+  if (!username) {
+    showError('Please type your Username/Email first so we know whose Face ID to verify.');
+    return;
+  }
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    const v = document.createElement('video');
+    v.srcObject = s; v.autoplay = true; v.playsInline = true;
+    await new Promise(r => v.onloadedmetadata = r);
+    await new Promise(r => setTimeout(r, 800));
+
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    const faceData = c.toDataURL('image/jpeg', 0.85);
+    s.getTracks().forEach(t => t.stop());
+
+    showToast('Verifying your face…');
+    await submitFaceLogin(username, faceData);
+  } catch (err) {
+    showError('Could not access camera for Face ID sign-in: ' + err.message);
+  }
+}
+
+// ============================================================
+// AUTH SUBMIT HANDLERS
+// ============================================================
+async function handleLogin(e) {
+  e.preventDefault();
+  hideError();
+  const username = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    const r = await fetch(ENDPOINTS.login, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'Sign in failed. Check credentials.');
+    }
+    const data = await r.json();
+    onAuthSuccess(data, username);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+async function handleSignup(e) {
+  e.preventDefault();
+  hideError();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+
+  try {
+    // 1. Create account
+    const r = await fetch(ENDPOINTS.register, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username: email, password })
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'Could not create account');
+    }
+
+    // 2. If face photo is captured, link it immediately
+    if (capturedImage) {
+      const blob = await b64toBlob(capturedImage);
+      const fd = new FormData();
+      fd.append('username', email);
+      fd.append('file', blob, 'face.jpg');
+
+      const faceRes = await fetch(ENDPOINTS.registerFace, {
+        method: 'POST',
+        body: fd
+      });
+      if (!faceRes.ok) {
+        const faceErr = await faceRes.json();
+        showToast('Account created, but Face ID linking failed: ' + (faceErr.detail || 'No face detected'));
+      }
+    }
+
+    // 3. Automatically sign in
+    const loginRes = await fetch(ENDPOINTS.login, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username: email, password })
+    });
+    if (loginRes.ok) {
+      const data = await loginRes.json();
+      onAuthSuccess(data, email);
+    } else {
+      showToast('Account created! Please sign in.');
+      switchView('login');
+    }
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+async function submitFaceLogin(username, faceData) {
+  try {
+    const blob = await b64toBlob(faceData);
+    const fd = new FormData();
+    fd.append('username', username);
+    fd.append('file', blob, 'face.jpg');
+
+    const r = await fetch(ENDPOINTS.loginFace, {
+      method: 'POST',
+      body: fd
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'Face verification failed');
+    }
+    const data = await r.json();
+    onAuthSuccess(data, username);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+function onAuthSuccess(data, username) {
+  if (data.access_token) localStorage.setItem('izs_token', data.access_token);
+  localStorage.setItem('izs_username', username);
+  showToast('Signed in — redirecting…');
+  setTimeout(() => { window.location.href = '/'; }, 700);
+}
+
+// Cleanup camera if user navigates away
+window.addEventListener('beforeunload', () => { if (stream) stopCamera(); });
+</script>
+</body>
+</html>
