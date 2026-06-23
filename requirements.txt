@@ -21,3 +21,4 @@ python-jose[cryptography]
 passlib[bcrypt]
 PyMuPDF
 python-docx
+opencv-python

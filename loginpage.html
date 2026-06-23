@@ -47,7 +47,7 @@
   html, body {
     height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg-primary); color: var(--text-primary);
-    overflow: hidden;
+    overflow-y: auto;
   }
 
   /* Ambient glow background */
@@ -726,7 +726,7 @@ function onAuthSuccess(data, username) {
   if (data.access_token) localStorage.setItem('izs_token', data.access_token);
   localStorage.setItem('izs_username', username);
   showToast('Signed in — redirecting…');
-  setTimeout(() => { window.location.href = '/'; }, 700);
+  setTimeout(() => { window.location.href = '/app'; }, 700);
 }
 
 // Cleanup camera if user navigates away

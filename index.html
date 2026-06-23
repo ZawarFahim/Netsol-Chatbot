@@ -607,13 +607,30 @@ function appendBotMsg(text, audioB64) {
 }
 
 function playAudio(btn, b64) {
+  if (btn._audio) {
+    if (btn._audio.paused) {
+      btn._audio.play();
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      btn.parentElement.classList.add('playing');
+    } else {
+      btn._audio.pause();
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      btn.parentElement.classList.remove('playing');
+    }
+    return;
+  }
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const blob = new Blob([bytes], { type: 'audio/wav' });
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
+  btn._audio = audio;
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  btn.parentElement.classList.add('playing');
   audio.play();
-  audio.onended = () => { URL.revokeObjectURL(url); btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; };
+  audio.onended = () => { 
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    btn.parentElement.classList.remove('playing');
+  };
 }
 
 function addTyping() {
