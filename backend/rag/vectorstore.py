@@ -29,7 +29,7 @@ def get_collection():
     db = client[db_name]
     return db[FAQ_COLLECTION_NAME]
 
-def save_vectorstore(chunks) -> None:
+def save_vectorstore(chunks, clear_existing: bool = False) -> None:
     """Generate embeddings and save chunks to MongoDB."""
     if not chunks:
         print("No chunks provided to save.")
@@ -54,8 +54,11 @@ def save_vectorstore(chunks) -> None:
             "metadata": meta
         })
 
-    print("Clearing existing vector database collection...")
-    collection.delete_many({})
+    if clear_existing:
+        print("Clearing existing vector database collection...")
+        collection.delete_many({})
+    else:
+        print("Appending to existing vector database collection...")
     
     print(f"Inserting {len(documents)} document embeddings into MongoDB...")
     collection.insert_many(documents)

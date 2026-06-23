@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from backend.routes import router
+from backend.auth_routes import auth_router
+from backend.upload_routes import upload_router
 from backend.db import client
 from backend.audio import get_whisper_model, get_kokoro_engine
 
@@ -39,6 +41,8 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(auth_router)
+app.include_router(upload_router)
 
 @app.get("/")
 def home():

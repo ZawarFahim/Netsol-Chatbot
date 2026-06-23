@@ -24,7 +24,7 @@ def build():
 
     print("Step 3: Generating embeddings and saving to MongoDB Atlas...")
     try:
-        save_vectorstore(chunks)
+        save_vectorstore(chunks, clear_existing=True)
         print("Success: Vector database successfully built in MongoDB Atlas!")
     except Exception as e:
         print(f"Error building index: {e}")

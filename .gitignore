@@ -16,3 +16,6 @@ backend/*.bin
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Exclude the frontend files
+frontend/

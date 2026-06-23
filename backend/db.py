@@ -24,6 +24,7 @@ db = client[DB_NAME]
 
 chat_collection = db["chats"]
 memory_collection = db["memory"]
+users_collection = db["users"]          # stores registered user accounts
 
 
 def database_status():
