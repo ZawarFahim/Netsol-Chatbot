@@ -1,13 +1,13 @@
 import json
 import base64
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
-from backend.models import ChatRequest
-from backend.openrouter import get_ai_response
-from backend.db import chat_collection
+from backend.schemas import ChatRequest
+from backend.services.llm import get_ai_response
+from backend.database import chat_collection
 from datetime import datetime, timezone
-from backend.tools import rag_tool
-from backend.audio import transcribe_audio_local, text_to_speech_kokoro
-from backend.auth import decode_token
+from backend.rag.tools import rag_tool
+from backend.services.audio import transcribe_audio_local, text_to_speech_kokoro
+from backend.services.auth import decode_token
 
 router = APIRouter()
 

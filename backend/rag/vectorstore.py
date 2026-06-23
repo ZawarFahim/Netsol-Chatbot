@@ -15,7 +15,7 @@ def get_embeddings():
         check_embedding_ctx_length=False
     )
 
-from backend.db import db
+from backend.database import db
 
 def get_collection():
     return db["faq_vectors"]

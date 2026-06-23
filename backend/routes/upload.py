@@ -1,6 +1,6 @@
 import io
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from backend.auth import decode_token
+from backend.services.auth import decode_token
 from backend.rag.vectorstore import save_vectorstore
 from langchain_core.documents import Document
 

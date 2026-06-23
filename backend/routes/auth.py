@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Form, File, UploadFile
 import numpy as np
-from backend.db import users_collection
-from backend.models import UserRegister, UserLogin
-from backend.auth import hash_password, verify_password, create_token, decode_token
-from backend.face_verifier import get_face_embedding, SIMILARITY_THRESHOLD
+from backend.database import users_collection
+from backend.schemas import UserRegister, UserLogin
+from backend.services.auth import hash_password, verify_password, create_token, decode_token
+from backend.services.face import get_face_embedding, SIMILARITY_THRESHOLD
 
 auth_router = APIRouter(prefix="/auth")
 

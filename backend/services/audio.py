@@ -5,10 +5,10 @@ import soundfile as sf
 from pathlib import Path
 from kokoro_onnx import Kokoro
 
-BACKEND_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-ONNX_PATH = BACKEND_DIR / "kokoro-v1.0.onnx"
-VOICES_PATH = BACKEND_DIR / "voices-v1.0.bin"
+ONNX_PATH = BACKEND_DIR / "weights/kokoro-v1.0.onnx"
+VOICES_PATH = BACKEND_DIR / "weights/voices-v1.0.bin"
 
 kokoro_engine = None
 whisper_model = None
