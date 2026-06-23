@@ -34,7 +34,7 @@ def save_vectorstore(chunks, clear_existing: bool = False):
         for t, e, c in zip(texts, embeddings, chunks)
     ])
 
-def similarity_search(query: str, limit: int = 3):
+def similarity_search(query: str, user_id: str, limit: int = 3):
     collection = get_collection()
     query_vector = get_embeddings().embed_query(query)
 
@@ -45,7 +45,8 @@ def similarity_search(query: str, limit: int = 3):
                 "path": "embedding",
                 "queryVector": query_vector,
                 "numCandidates": 100,
-                "limit": limit
+                "limit": limit,
+                "filter": {"metadata.uploaded_by": user_id}
             }
         }]))
         if results:
@@ -54,7 +55,7 @@ def similarity_search(query: str, limit: int = 3):
         pass
 
     scored_docs = []
-    for doc in collection.find({}, {"text": 1, "embedding": 1, "metadata": 1}):
+    for doc in collection.find({"metadata.uploaded_by": user_id}, {"text": 1, "embedding": 1, "metadata": 1}):
         emb = doc.get("embedding")
         if emb and len(emb) == len(query_vector):
             score = float(np.dot(query_vector, emb) / (np.linalg.norm(query_vector) * np.linalg.norm(emb)))

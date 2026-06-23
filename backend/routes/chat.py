@@ -48,7 +48,7 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
         args = json.loads(tool_call["function"]["arguments"])
         
         messages.append(message)
-        messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": rag_tool(args["query"])})
+        messages.append({"role": "tool", "tool_call_id": tool_call["id"], "content": rag_tool(args["query"], user_id)})
         
         return get_ai_response(messages)["choices"][0]["message"]["content"]
     

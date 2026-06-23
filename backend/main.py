@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from backend.routes.chat import router
 from backend.routes.auth import auth_router
 from backend.routes.upload import upload_router
@@ -31,6 +31,10 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(auth_router)
 app.include_router(upload_router)
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 @app.get("/app", response_class=HTMLResponse)
 def serve_app():
