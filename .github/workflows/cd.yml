@@ -1,0 +1,24 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Render Deployment
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: '${{ secrets.RENDER_DEPLOY_HOOK }}'
+          method: 'GET'
+          timeout: 10000
+
+      - name: Verify Deployment Triggered
+        run: |
+          echo "Deployment successfully triggered on Render."
+          echo "Render will automatically pull the latest code, install dependencies, and restart the service."
