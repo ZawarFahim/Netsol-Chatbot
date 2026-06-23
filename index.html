@@ -299,14 +299,14 @@
 
   .input-box {
     background: var(--bg-input); border: 1px solid var(--border);
-    border-radius: 20px; display: flex; align-items: flex-end;
+    border-radius: 20px; display: flex; align-items: flex-end; gap: 8px;
     padding: 8px 12px; transition: border-color 0.15s;
   }
   .input-box:focus-within { border-color: var(--text-muted); }
 
   .action-btn {
     background: none; border: none; cursor: pointer;
-    color: var(--icon-btn); padding: 8px; border-radius: 50%;
+    color: var(--icon-btn); padding: 7px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s; flex-shrink: 0;
   }
@@ -318,7 +318,7 @@
   .input-box textarea {
     flex: 1; background: none; border: none; outline: none;
     color: var(--text-primary); font-size: 14px; font-family: inherit;
-    resize: none; max-height: 200px; height: 24px; padding: 2px 8px;
+    resize: none; max-height: 200px; height: 26px; padding: 3px 4px;
     line-height: 1.5;
   }
   .input-box textarea::placeholder { color: var(--text-muted); }

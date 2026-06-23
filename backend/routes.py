@@ -12,7 +12,7 @@ from backend.auth import decode_token
 router = APIRouter()
 
 def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> str:
-    messages = [{"role": "system", "content": "You are a helpful AI Assistant. Call rag_tool for NETSOL/FAQ queries."}]
+    messages = [{"role": "system", "content": "You are a helpful AI Assistant. You have access to the user's uploaded documents (PDFs, text) via the rag_tool. If the user asks about a document, PDF, or specific knowledge, you MUST call rag_tool with a search query to find the answer."}]
     
     query = {"user_id": user_id}
     if session_id: query["session_id"] = session_id
@@ -27,7 +27,19 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
         
     messages.append({"role": "user", "content": user_message})
     
-    response = get_ai_response(messages, tools=[{"type": "function", "function": {"name": "rag_tool", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}}])
+    tools = [{
+        "type": "function",
+        "function": {
+            "name": "rag_tool",
+            "description": "Search the user's uploaded documents and PDFs for relevant text.",
+            "parameters": {
+                "type": "object", 
+                "properties": {"query": {"type": "string", "description": "The search query to look up in the documents"}}, 
+                "required": ["query"]
+            }
+        }
+    }]
+    response = get_ai_response(messages, tools=tools)
     if "error" in response: raise HTTPException(status_code=500)
         
     message = response["choices"][0]["message"]
@@ -86,5 +98,13 @@ def clear_chat(user_id: str = Depends(decode_token)):
 @router.get("/chat/{session_id}")
 def get_chat_history(session_id: str, user_id: str = Depends(decode_token)):
     history = list(chat_collection.find({"user_id": user_id, "session_id": session_id}).sort("created_at", 1))
-    for msg in history: msg["_id"] = str(msg["_id"])
+    for msg in history: 
+        msg["_id"] = str(msg["_id"])
+        if "role" not in msg:
+            if "bot" in msg:
+                msg["role"] = "assistant"
+                msg["content"] = msg["bot"]
+            elif "user" in msg:
+                msg["role"] = "user"
+                msg["content"] = msg["user"]
     return {"history": history}

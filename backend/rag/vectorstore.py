@@ -15,8 +15,10 @@ def get_embeddings():
         check_embedding_ctx_length=False
     )
 
+from backend.db import db
+
 def get_collection():
-    return MongoClient(os.getenv("MONGO_URI"))[os.getenv("DB_NAME")]["faq_vectors"]
+    return db["faq_vectors"]
 
 def save_vectorstore(chunks, clear_existing: bool = False):
     if not chunks:
