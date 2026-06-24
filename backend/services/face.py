@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "weights/sface.onnx")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "../weights/sface.onnx")
 SIMILARITY_THRESHOLD = 0.45
 session = None
 
@@ -14,10 +14,14 @@ def get_session():
     return session
 
 def crop_face(image_bytes: bytes) -> np.ndarray:
+    if not image_bytes:
+        raise ValueError("Empty image data received")
     nparr = np.frombuffer(image_bytes, np.uint8)
+    if nparr.size == 0:
+        raise ValueError("Empty image buffer")
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
-        raise ValueError("Invalid image")
+        raise ValueError("Invalid image format or decoding failed")
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
