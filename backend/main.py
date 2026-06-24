@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, Response
 from backend.routes.chat import router
 from backend.routes.auth import auth_router
 from backend.routes.upload import upload_router
+# Trigger uvicorn reload for database sface model path fix
 from backend.database import client
 from backend.services.audio import get_whisper_model, get_kokoro_engine
 
