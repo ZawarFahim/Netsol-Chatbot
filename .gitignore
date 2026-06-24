@@ -17,5 +17,4 @@ backend/*.bin
 .DS_Store
 Thumbs.db
 
-# Exclude the frontend files
-frontend/
+
