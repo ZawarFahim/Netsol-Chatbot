@@ -5,9 +5,19 @@ from fastapi.responses import HTMLResponse, Response
 from backend.routes.chat import router
 from backend.routes.auth import auth_router
 from backend.routes.upload import upload_router
-# Trigger uvicorn reload for database sface model path fix
 from backend.database import client
 from backend.services.audio import get_whisper_model, get_kokoro_engine
+import logfire
+import os
+
+try:
+    if os.getenv("LOGFIRE_TOKEN"):
+        logfire.configure()
+    else:
+        logfire.configure(send_to_logfire=False)
+except Exception as e:
+    print(f"Logfire initialization warning: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,6 +30,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+logfire.instrument_fastapi(app)
 
 app.add_middleware(
     CORSMiddleware,

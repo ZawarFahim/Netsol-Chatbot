@@ -1,4 +1,7 @@
-from backend.rag.retriever import get_relevant_docs
+from backend.rag.vectorstore import similarity_search
 
 def rag_tool(query: str, user_id: str):
-    return "\n\n".join([d.page_content for d in get_relevant_docs(query, user_id, limit=10)])
+    try:
+        return "\n\n".join([d.page_content for d in similarity_search(query, user_id, limit=10)])
+    except Exception:
+        return ""
