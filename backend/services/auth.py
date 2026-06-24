@@ -17,16 +17,17 @@ def hash_password(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
-def create_token(user_id: str) -> str:
+def create_token(user_id: str, login_method: str = "password") -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
-    return jwt.encode({"sub": user_id, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({"sub": user_id, "login_method": login_method, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_token(token: str = Depends(oauth2_scheme)) -> str:
+def decode_token(token: str = Depends(oauth2_scheme)) -> dict:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        login_method: str = payload.get("login_method", "password")
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        return user_id
+        return {"user_id": user_id, "login_method": login_method}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "../sface.onnx")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "../weights/sface.onnx")
 SIMILARITY_THRESHOLD = 0.45
 session = None
 

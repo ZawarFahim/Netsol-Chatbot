@@ -19,7 +19,8 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
     raise HTTPException(status_code=400, detail=f"Unsupported file format: .{ext}. Please upload a PDF, DOCX, or TXT file.")
 
 @upload_router.post("")
-async def upload_file(file: UploadFile = File(...), user_id: str = Depends(decode_token)):
+async def upload_file(file: UploadFile = File(...), token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
     text = extract_text(await file.read(), file.filename)
     if not text.strip():
         raise HTTPException(status_code=400, detail="The document appears to be empty or contains no readable text (it might be a scanned image).")

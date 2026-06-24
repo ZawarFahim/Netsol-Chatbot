@@ -28,3 +28,4 @@ client = MongoClient(MONGO_URI, **client_kwargs)
 db = client[os.getenv("DB_NAME", "voice_rag_ai")]
 chat_collection = db["chats"]
 users_collection = db["users"]
+sessions_collection = db["sessions"]

@@ -8,7 +8,12 @@ class ChatRequest(BaseModel):
 class UserRegister(BaseModel):
     username: str
     password: str
+    name: str
 
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class SessionCreate(BaseModel):
+    session_id: str
+    title: str

@@ -666,13 +666,14 @@ async function handleSignup(e) {
   hideError();
   const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
+  const name = document.getElementById('signupName').value.trim();
 
   try {
     // 1. Create account
     const r = await fetch(ENDPOINTS.register, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ username: email, password })
+      body: JSON.stringify({ username: email, password, name })
     });
     if (!r.ok) {
       let msg = 'Could not create account';

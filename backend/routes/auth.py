@@ -11,7 +11,7 @@ auth_router = APIRouter(prefix="/auth")
 def register(user: UserRegister):
     if users_collection.find_one({"username": user.username}):
         raise HTTPException(status_code=400, detail="Username already exists")
-    users_collection.insert_one({"username": user.username, "password": hash_password(user.password)})
+    users_collection.insert_one({"username": user.username, "password": hash_password(user.password), "name": user.name})
     return {"message": "Account created successfully"}
 
 @auth_router.post("/login")
@@ -19,11 +19,11 @@ def login(user: UserLogin):
     db_user = users_collection.find_one({"username": user.username})
     if not db_user or not verify_password(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    return {"access_token": create_token(user.username), "token_type": "bearer"}
+    return {"access_token": create_token(user.username, login_method="password"), "token_type": "bearer"}
 
 @auth_router.get("/me")
-def me(user_id: str = Depends(decode_token)):
-    return {"username": user_id}
+def me(token_data: dict = Depends(decode_token)):
+    return {"username": token_data["user_id"], "login_method": token_data["login_method"]}
 
 @auth_router.post("/register-face")
 async def register_face(username: str = Form(...), password: str = Form(...), file: UploadFile = File(...)):
@@ -47,7 +47,7 @@ async def login_face(username: str = Form(...), file: UploadFile = File(...)):
     try:
         similarity = float(np.dot(np.array(user["face_embedding"]), get_face_embedding(await file.read())))
         if similarity >= SIMILARITY_THRESHOLD:
-            return {"access_token": create_token(username), "token_type": "bearer"}
+            return {"access_token": create_token(username, login_method="face_id"), "token_type": "bearer"}
         raise HTTPException(status_code=401, detail="Face verification failed (no match)")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Face verification failed: {str(e)}")

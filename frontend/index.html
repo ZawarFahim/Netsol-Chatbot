@@ -479,7 +479,7 @@ document.getElementById('avatarLetter').textContent = activeUsername.charAt(0).t
 
 const API = 'http://localhost:8000';
 let messages = [];
-let sessions = JSON.parse(localStorage.getItem('izs_sessions_' + activeUsername) || '[]');
+let sessions = [];
 let currentSessionId = null;
 let isLoading = false;
 let isRecording = false;
@@ -534,6 +534,24 @@ async function checkStatus() {
 }
 checkStatus();
 
+async function loadSessions() {
+  try {
+    const r = await fetch(API + '/chat/sessions', { headers: authHeaders() });
+    if (r.ok) {
+      const data = await r.json();
+      sessions = data.sessions.map(s => ({
+        id: s.session_id,
+        title: s.title,
+        ts: s.ts
+      }));
+      renderSidebar();
+    }
+  } catch (err) {
+    console.error('Failed to load sessions:', err);
+  }
+}
+loadSessions();
+
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 200) + 'px';
@@ -562,13 +580,24 @@ function newChat() {
   closeSidebar();
 }
 
-function saveSession(firstMsg) {
+async function saveSession(firstMsg) {
   if (!currentSessionId) {
     currentSessionId = Date.now().toString();
-    const session = { id: currentSessionId, title: firstMsg.slice(0, 40), ts: Date.now() };
-    sessions.unshift(session);
-    localStorage.setItem('izs_sessions_' + activeUsername, JSON.stringify(sessions));
-    renderSidebar();
+    const title = firstMsg.slice(0, 40);
+    try {
+      const r = await fetch(API + '/chat/sessions', {
+        method: 'POST',
+        headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
+        body: JSON.stringify({ session_id: currentSessionId, title: title })
+      });
+      if (r.ok) {
+        const session = { id: currentSessionId, title: title, ts: Date.now() };
+        sessions.unshift(session);
+        renderSidebar();
+      }
+    } catch (err) {
+      console.error('Failed to save session to DB:', err);
+    }
   }
 }
 
@@ -800,7 +829,7 @@ async function clearChat() {
   if (!confirm('Clear all chat history? This cannot be undone.')) return;
   try {
     await fetch(API + '/clear', { method: 'DELETE', headers: authHeaders() });
-    sessions = []; localStorage.removeItem('izs_sessions_' + activeUsername); newChat();
+    sessions = []; renderSidebar(); newChat();
     showToast('Chat history cleared');
   } catch { showToast('Failed to clear — is the server running?', 3000); }
 }

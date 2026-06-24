@@ -1,9 +1,9 @@
 import json
 import base64
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
-from backend.schemas import ChatRequest
+from backend.schemas import ChatRequest, SessionCreate
 from backend.services.llm import get_ai_response
-from backend.database import chat_collection
+from backend.database import chat_collection, sessions_collection
 from datetime import datetime, timezone
 from backend.rag.tools import rag_tool
 from backend.services.audio import transcribe_audio_local, text_to_speech_kokoro
@@ -54,21 +54,23 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
     
     return message["content"]
 
-def persist_to_db(user_msg: str, ai_msg: str, user_id: str, session_id: str):
+def persist_to_db(user_msg: str, ai_msg: str, user_id: str, session_id: str, login_method: str):
     import time
     now_user = datetime.now(timezone.utc)
     time.sleep(0.001)  # Ensure distinct timestamps for correct chronological sorting
     now_ai = datetime.now(timezone.utc)
     
     chat_collection.insert_many([
-        {"user_id": user_id, "session_id": session_id, "role": "user", "content": user_msg, "created_at": now_user},
-        {"user_id": user_id, "session_id": session_id, "role": "assistant", "content": ai_msg, "created_at": now_ai}
+        {"user_id": user_id, "session_id": session_id, "role": "user", "content": user_msg, "created_at": now_user, "login_method": login_method},
+        {"user_id": user_id, "session_id": session_id, "role": "assistant", "content": ai_msg, "created_at": now_ai, "login_method": login_method}
     ])
 
 @router.post("/chat")
-def chat(req: ChatRequest, user_id: str = Depends(decode_token)):
+def chat(req: ChatRequest, token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
+    login_method = token_data["login_method"]
     ai_reply = execute_llm_pipeline(req.message, user_id, req.session_id)
-    persist_to_db(req.message, ai_reply, user_id, req.session_id)
+    persist_to_db(req.message, ai_reply, user_id, req.session_id, login_method)
     
     res = {"response": ai_reply}
     if req.generate_audio:
@@ -76,13 +78,15 @@ def chat(req: ChatRequest, user_id: str = Depends(decode_token)):
     return res
 
 @router.post("/chat-audio")
-async def chat_audio(file: UploadFile = File(...), session_id: str = Form(None), user_id: str = Depends(decode_token)):
+async def chat_audio(file: UploadFile = File(...), session_id: str = Form(None), token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
+    login_method = token_data["login_method"]
     user_message = transcribe_audio_local(await file.read(), file.filename)
     if not user_message.strip():
         raise HTTPException(status_code=400)
         
     ai_reply = execute_llm_pipeline(user_message, user_id, session_id)
-    persist_to_db(user_message, ai_reply, user_id, session_id)
+    persist_to_db(user_message, ai_reply, user_id, session_id, login_method)
     
     return {
         "user_text": user_message,
@@ -90,13 +94,44 @@ async def chat_audio(file: UploadFile = File(...), session_id: str = Form(None),
         "bot_audio": base64.b64encode(text_to_speech_kokoro(ai_reply)).decode("utf-8")
     }
 
+@router.get("/chat/sessions")
+def get_sessions(token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
+    sessions = list(sessions_collection.find({"user_id": user_id}).sort("created_at", -1))
+    for s in sessions:
+        s["_id"] = str(s["_id"])
+        s["id"] = s["session_id"]
+        if "created_at" in s:
+            if isinstance(s["created_at"], datetime):
+                s["ts"] = int(s["created_at"].timestamp() * 1000)
+            else:
+                s["ts"] = s["created_at"]
+    return {"sessions": sessions}
+
+@router.post("/chat/sessions")
+def create_session(session_req: SessionCreate, token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
+    login_method = token_data["login_method"]
+    if not sessions_collection.find_one({"user_id": user_id, "session_id": session_req.session_id}):
+        sessions_collection.insert_one({
+            "session_id": session_req.session_id,
+            "user_id": user_id,
+            "title": session_req.title,
+            "login_method": login_method,
+            "created_at": datetime.now(timezone.utc)
+        })
+    return {"message": "Success"}
+
 @router.delete("/clear")
-def clear_chat(user_id: str = Depends(decode_token)):
+def clear_chat(token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
     chat_collection.delete_many({"user_id": user_id})
+    sessions_collection.delete_many({"user_id": user_id})
     return {"status": "success"}
 
 @router.get("/chat/{session_id}")
-def get_chat_history(session_id: str, user_id: str = Depends(decode_token)):
+def get_chat_history(session_id: str, token_data: dict = Depends(decode_token)):
+    user_id = token_data["user_id"]
     history = list(chat_collection.find({"user_id": user_id, "session_id": session_id}).sort("created_at", 1))
     for msg in history: 
         msg["_id"] = str(msg["_id"])
