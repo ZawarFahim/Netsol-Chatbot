@@ -13,4 +13,4 @@ def build():
         save_vectorstore(split_documents(docs), clear_existing=True)
 
 if __name__ == "__main__":
-    build()
+    build() 
