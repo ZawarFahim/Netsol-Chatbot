@@ -36,5 +36,6 @@ jobs:
       - name: Run Tests
         env:
           MONGO_URI: mongodb://localhost:27017/test
+          PYTHONPATH: .
         run: |
-          pytest
+          python -m pytest
