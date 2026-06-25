@@ -20,3 +20,4 @@ python-docx
 opencv-python
 langfuse
 logfire[fastapi]
+importlib-metadata
