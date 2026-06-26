@@ -95,6 +95,7 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
                 
         if "error" in response: 
             if trace: trace.end()
+            print(f"OpenRouter Error Details: {response['error']}")
             raise HTTPException(status_code=500)
             
         message = response["choices"][0]["message"]
