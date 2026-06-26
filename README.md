@@ -115,4 +115,36 @@ Once running, access the web interface at:
 
 *   **Biometric Data Security**: Raw camera photos are never stored. The face verifier instantly processes captured frames into normalized **128-dimensional embeddings** stored in MongoDB, and discards the image.
 *   **Authentication Gates**: Access to documents, vector indices, and chat histories are strictly protected by JWT verification (`Depends(decode_token)`).
-*   **Session Isolation**: Chat threads are securely isolated by both `user_id` and browser-scoped `localStorage` partitions to prevent cross-account leakage.
+*   **Session Isolation**: Chat threads are securely isolated by both `user_id` and database sessions to prevent cross-account leakage.
+
+---
+
+## ☁️ Deployment & CI/CD Pipeline
+
+The project is configured for fully automated deployment to **Hugging Face Spaces (Docker SDK)**.
+
+### 1. Cloud Architecture & Settings
+*   **Hosting**: Hugging Face Spaces (CPU Basic Free Tier — 16GB RAM, 2vCPU).
+*   **Database**: MongoDB Atlas (Free Tier M0 cluster).
+*   **Models**: Whisper, Kokoro TTS, and SFace ONNX models are baked directly into the Docker image during the build phase (`download_models.py`).
+
+### 2. Environment Variables & Secrets Configuration
+
+Configure the following secrets in your **Hugging Face Space Settings** under **Variables and Secrets**:
+*   `MONGO_URI`: MongoDB connection string.
+*   `DB_NAME`: Database name (e.g., `chatbot_user`).
+*   `OPENROUTER_API_KEY`: OpenRouter API key for LLM and embeddings logic.
+*   `JWT_SECRET`: Secure secret key for signing user sessions.
+*   `LANGFUSE_PUBLIC_KEY` & `LANGFUSE_SECRET_KEY`: Tracing parameters.
+*   `LANGFUSE_BASE_URL`: Defaults to `https://cloud.langfuse.com`.
+*   `LOGFIRE_TOKEN`: Logging telemetry token.
+
+*(Note: Ensure there are no surrounding double or single quotes when pasting secrets).*
+
+### 3. CI/CD Workflows (GitHub Actions)
+
+The repository includes two active pipelines under `.github/workflows/`:
+1.  **CI Pipeline (`ci.yml`)**: Installs dependencies, runs code linters (`flake8`), and executes Python test suites (`pytest`) on every commit to `main`.
+2.  **CD Pipeline (`cd.yml`)**: Triggers in parallel on every push to `main` and syncs the codebase directly to your Hugging Face Space using `git` and your `HF_TOKEN` secret.
+
+To run the CD pipeline, add your Hugging Face Access Token to your **GitHub Repository Settings** under **Secrets and variables > Actions > New repository secret** as `HF_TOKEN`.
