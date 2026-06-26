@@ -1,3 +1,13 @@
+---
+title: Netsol Chatbot
+emoji: 💬
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # IZS — AI Voice Chatbot & Document Search (RAG) with Face ID
 
 An advanced, secure full-stack AI assistant featuring **voice interactions (STT/TTS)**, **Document Search (RAG)**, and biometric **Face ID authentication** (powered locally by OpenCV and ONNX).
