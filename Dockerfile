@@ -3,10 +3,6 @@ FROM python:3.10-slim
 # Install system dependencies required for OpenCV and Audio processing
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    libsm6 \
-    libxext6 \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -20,7 +20,7 @@ python-jose[cryptography]
 passlib[bcrypt]
 PyMuPDF
 python-docx
-opencv-python
+opencv-python-headless
 certifi
 langfuse
 logfire[fastapi]
