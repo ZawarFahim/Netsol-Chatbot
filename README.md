@@ -1,13 +1,3 @@
----
-title: Netsol Chatbot
-emoji: 💬
-colorFrom: green
-colorTo: blue
-sdk: docker
-app_port: 8000
-pinned: false
----
-
 # IZS — AI Voice Chatbot & Document Search (RAG) with Face ID
 
 An advanced, secure full-stack AI assistant featuring **voice interactions (STT/TTS)**, **Document Search (RAG)**, and biometric **Face ID authentication** (powered locally by OpenCV and ONNX).
@@ -106,8 +96,8 @@ python -m uvicorn backend.main:app --reload
 ```
 
 Once running, access the web interface at:
-*   **Sign-in / Sign-up page**: [http://localhost:8000/loginpage.html](http://localhost:8000/loginpage.html)
-*   **Main Chatbot Workspace**: [http://localhost:8000/app](http://localhost:8000/app)
+*   **Sign-in / Sign-up page**: [https://zawar2121-netsol-chatbot.hf.space/loginpage.html](https://zawar2121-netsol-chatbot.hf.space/loginpage.html)
+*   **Main Chatbot Workspace**: [https://zawar2121-netsol-chatbot.hf.space/app](https://zawar2121-netsol-chatbot.hf.space/app)
 
 ---
 
