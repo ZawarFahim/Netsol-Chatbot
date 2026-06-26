@@ -477,7 +477,7 @@ const activeUsername = localStorage.getItem('izs_username') || 'User Account';
 document.getElementById('profileName').textContent = activeUsername;
 document.getElementById('avatarLetter').textContent = activeUsername.charAt(0).toUpperCase();
 
-const API = 'http://localhost:8000';
+const API = window.location.origin;
 let messages = [];
 let sessions = [];
 let currentSessionId = null;

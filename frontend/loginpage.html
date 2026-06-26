@@ -459,7 +459,7 @@
 // ============================================================
 // BACKEND ENDPOINTS — your teammate will wire these up later
 // ============================================================
-const API = 'http://localhost:8000';
+const API = window.location.origin;
 const ENDPOINTS = {
   login:        API + '/auth/login',
   register:     API + '/auth/register',
