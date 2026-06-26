@@ -8,9 +8,12 @@ beautifulsoup4==4.13.2
 langchain-core
 langchain-text-splitters
 langchain-openai
+langchain-community
+sentence-transformers
 numpy
 openai-whisper
 kokoro-onnx
+onnxruntime
 soundfile==0.12.1
 python-multipart
 python-jose[cryptography]
@@ -18,6 +21,7 @@ passlib[bcrypt]
 PyMuPDF
 python-docx
 opencv-python
+certifi
 langfuse
 logfire[fastapi]
 importlib-metadata
