@@ -2,7 +2,7 @@ import requests
 import os
 
 def get_ai_response(messages: list, tools=None):
-    payload = {"model": "openai/gpt-4o-mini", "messages": messages}
+    payload = {"model": "google/gemini-2.5-flash:free", "messages": messages}
     if tools:
         payload.update({"tools": tools, "tool_choice": "auto"})
     try:
