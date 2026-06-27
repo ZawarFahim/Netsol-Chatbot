@@ -5,7 +5,7 @@ langfuse_client = None
 
 try:
     # Clean environment variables from literal quotes
-    for key in ["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL", "OPENROUTER_API_KEY", "MONGO_URI"]:
+    for key in ["LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL", "OPENROUTER_API_KEY", "GROQ_API_KEY", "MONGO_URI"]:
         val = os.getenv(key)
         if val:
             os.environ[key] = val.strip('"').strip("'")

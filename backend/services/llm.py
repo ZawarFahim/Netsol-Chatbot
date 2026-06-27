@@ -1,23 +1,46 @@
-import requests
 import os
+from groq import Groq
+
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = Groq()
+    return _client
 
 def get_ai_response(messages: list, tools=None):
-    payload = {"model": "openai/gpt-4o-mini", "messages": messages}
-    if tools:
-        payload.update({"tools": tools, "tool_choice": "auto"})
     try:
-        res = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost",
-                "X-Title": "RAG Tool Chatbot"
-            },
-            json=payload,
-            timeout=60
-        )
-        res.raise_for_status()
-        return res.json()
+        kwargs = {
+            "model": "llama3-8b-8192",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1024,
+        }
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
+
+        completion = get_client().chat.completions.create(**kwargs)
+        
+        message = completion.choices[0].message
+        message_dict = {
+            "role": message.role or "assistant",
+            "content": message.content or ""
+        }
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            message_dict["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": tc.type,
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments
+                    }
+                }
+                for tc in message.tool_calls
+            ]
+
+        return {"choices": [{"message": message_dict}]}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e)}

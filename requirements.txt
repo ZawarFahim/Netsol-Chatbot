@@ -25,3 +25,4 @@ certifi
 langfuse
 logfire[fastapi]
 importlib-metadata
+groq
