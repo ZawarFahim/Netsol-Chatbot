@@ -1,19 +1,15 @@
 import os
 import numpy as np
 from pymongo import MongoClient
-from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 def get_embeddings():
-    return OpenAIEmbeddings(
-        model="openai/text-embedding-3-small",
-        openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-        openai_api_base="https://openrouter.ai/api/v1",
-        check_embedding_ctx_length=False
-    )
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 from backend.database import db
 
