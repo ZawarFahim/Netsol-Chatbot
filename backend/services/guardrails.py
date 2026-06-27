@@ -4,7 +4,13 @@ PROMPT_INJECTION_PATTERNS = [
     r"ignore\s+(?:all\s+)?previous\s+instructions",
     r"bypass\s+security",
     r"system\s+prompt",
-    r"reveal\s+instructions"
+    r"reveal\s+instructions",
+    r"developermodeai",
+    r"developer\s+mode",
+    r"no\s+safety\s+rules",
+    r"no\s+ethics",
+    r"pretend\s+you\s+are",
+    r"jailbreak"
 ]
 
 def check_input_guardrail(text: str) -> str | None:
