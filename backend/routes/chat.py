@@ -36,7 +36,7 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
         except Exception as e:
             print(f"Error starting Langfuse trace: {e}")
 
-        messages = [{"role": "system", "content": "You are a helpful AI Assistant. You have access to the user's uploaded documents (PDFs, text) via the rag_tool. If the user asks about a document, PDF, or specific knowledge, you MUST call rag_tool with a search query to find the answer."}]
+        messages = [{"role": "system", "content": "You are a helpful AI Assistant. You have access to the user's uploaded documents (PDFs, text) via the rag_tool. If the user asks about a document, PDF, or specific knowledge, you MUST call rag_tool with a search query to find the answer. However, do NOT use the rag_tool for general greetings, casual chitchat, or self-introductions (such as 'hello', 'hey', 'my name is...', 'how are you'). For these, reply with a friendly, generic conversational response instead of searching the documents."}]
         
         query = {"user_id": user_id}
         if session_id: query["session_id"] = session_id
