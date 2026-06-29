@@ -41,6 +41,17 @@ def get_ai_response(messages: list, tools=None):
                 for tc in message.tool_calls
             ]
 
-        return {"choices": [{"message": message_dict}]}
+        usage_dict = {}
+        if hasattr(completion, "usage") and completion.usage:
+            usage_dict = {
+                "prompt_tokens": getattr(completion.usage, "prompt_tokens", 0),
+                "completion_tokens": getattr(completion.usage, "completion_tokens", 0),
+                "total_tokens": getattr(completion.usage, "total_tokens", 0)
+            }
+
+        return {
+            "choices": [{"message": message_dict}],
+            "usage": usage_dict
+        }
     except Exception as e:
         return {"error": str(e)}

@@ -69,7 +69,7 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
                 generation1 = trace.start_observation(
                     name="llm-initial-call",
                     as_type="generation",
-                    model="openai/gpt-4o-mini",
+                    model="llama-3.3-70b-versatile",
                     input=messages
                 )
             except Exception as e:
@@ -134,7 +134,7 @@ def execute_llm_pipeline(user_message: str, user_id: str, session_id: str) -> st
                     generation2 = trace.start_observation(
                         name="llm-final-call",
                         as_type="generation",
-                        model="openai/gpt-4o-mini",
+                        model="llama-3.3-70b-versatile",
                         input=messages
                     )
                 except Exception as e:
