@@ -22,7 +22,15 @@ except Exception as e:
 def start_trace(name: str, user_id: str, session_id: str = None):
     if langfuse_client:
         try:
-            return langfuse_client.trace(name=name, user_id=user_id, session_id=session_id)
+            return langfuse_client.start_observation(name=name)
         except Exception as e:
             print(f"Error starting Langfuse trace: {e}")
     return None
+
+def flush_traces():
+    if langfuse_client:
+        try:
+            langfuse_client.flush()
+        except Exception as e:
+            print(f"Error flushing Langfuse traces: {e}")
+

@@ -9,7 +9,7 @@ from backend.rag.tools import rag_tool
 from backend.services.audio import transcribe_audio_local, text_to_speech_kokoro
 from backend.services.auth import decode_token
 
-from backend.services.tracing import start_trace
+from backend.services.tracing import start_trace, flush_traces
 from backend.services.guardrails import check_input_guardrail, check_output_guardrail
 from backend.services.evaluations import run_evaluation
 from langfuse import propagate_attributes
@@ -212,6 +212,12 @@ def chat(req: ChatRequest, token_data: dict = Depends(decode_token)):
     res = {"response": ai_reply}
     if req.generate_audio:
         res["bot_audio"] = base64.b64encode(text_to_speech_kokoro(ai_reply)).decode("utf-8")
+        
+    try:
+        flush_traces()
+    except Exception as e:
+        print(f"Error flushing traces: {e}")
+        
     return res
 
 @router.post("/chat-audio")
@@ -225,6 +231,11 @@ async def chat_audio(file: UploadFile = File(...), session_id: str = Form(None),
     ai_reply = execute_llm_pipeline(user_message, user_id, session_id)
     persist_to_db(user_message, ai_reply, user_id, session_id, login_method)
     
+    try:
+        flush_traces()
+    except Exception as e:
+        print(f"Error flushing traces: {e}")
+        
     return {
         "user_text": user_message,
         "bot_text": ai_reply,
